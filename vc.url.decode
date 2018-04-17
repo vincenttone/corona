@@ -1,0 +1,4 @@
+#!/usr/bin/env php
+<?php
+include_once(dirname(__FILE__) . '/libs/vcli.inc');
+v_rcli('urldecode', 2);

@@ -1,0 +1,2 @@
+#!/bin/sh
+for i in $(git diff --stat master|cut -d\| -f1|grep php);do php -l $i;done

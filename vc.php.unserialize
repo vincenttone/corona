@@ -1,0 +1,32 @@
+#!/usr/bin/env php
+<?php
+$x = getopt('f::');
+$filter = null;
+if (isset($x['f'])) {
+    $filter = explode(',', $x['f']);
+}
+if ($filter !== null) {
+    echo implode("\t", $filter);
+    echo PHP_EOL;
+}
+while($d = fgets(STDIN)) {
+    if ($filter === null) {
+        print_r(unserialize($d));
+    } else {
+        $data = unserialize($d);
+        $r = [];
+        foreach ($filter as $_f) {
+            if (isset($data[$_f])) {
+                if (is_array($data[$_f])) {
+                    array_push($r, serialize($data[$_f]));
+                } else {
+                    array_push($r, $data[$_f]);
+                }
+            } else {
+                array_push($r, '');
+            }
+        }
+        echo implode("\t", $r);
+        echo PHP_EOL;
+    }
+};

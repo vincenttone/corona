@@ -1,0 +1,99 @@
+#!/usr/bin/env php
+<?php
+$a = getopt('svhn');
+$j1 = null;
+$s = isset($a['s']) ? true : false;
+$n = isset($a['n']) ? true : false;
+$v = isset($a['v']) ? true : false;
+if (isset($a['h'])) {
+    echo 'USEAGE: ' . __FILE__ . ' [-s] [-v] [-h]' . PHP_EOL;
+    echo "\tcheck diff of first input json".PHP_EOL;
+    echo "\t(input :q to quit)".PHP_EOL;
+    echo "\t-n filter same".PHP_EOL;
+    echo "\t-s strict checking".PHP_EOL;
+    echo "\t-v verbose infomation".PHP_EOL;
+    echo "\t-h helper".PHP_EOL;
+    exit;
+}
+while ($j = fgets(STDIN)) {
+    $j = trim($j);
+    if ($j == ':q') {
+        break;
+    }
+    $j = json_decode($j, true);
+    if (empty($j)) {
+        echo 'please input json[ or :q to quit]:'.PHP_EOL;;
+        continue;
+    }
+    if ($j1 === null) {
+        $j1 = $j;
+        continue;
+    } else {
+        $j2 = $j;
+    }
+    if (is_array($j1) && is_array($j2)) {
+        $d = diff($j1, $j2, '', [$s, $v, $n]);
+        echo "SAME:[${d[0]}]\tDIFF:[${d[1]}]\tNOT EXISTS:[${d[2]}]\tSURPLUS:[${d[3]}]".PHP_EOL;
+    } else {
+        echo 'not json format'.PHP_EOL;
+    }
+}
+
+function equal($s1, $s2, $s = false)
+{
+    if ($s) {
+        return $s1 === $s2;
+    }
+    return $s1 == $s2;
+}
+
+function diff($a1, $a2, $p, $o)
+{
+    $s = $o[0];
+    $v = $o[1];
+    $n = $o[2];
+    $sc = $dc = $nec = $spc = 0;
+    foreach ($a1 as $_k => $_v) {
+        $prekey = $p . "\t" .$_k;
+        if (array_key_exists($_k, $a2)) {
+            if(is_array($_v)) {
+                $diff = diff($_v, $a2[$_k], $prekey, $o);
+                $sc += $diff[0];
+                $dc += $diff[1];
+                $nec += $diff[2];
+                $spc += $diff[3];
+            } else {
+                if (equal($a2[$_k], $_v, $s)) {
+                    if (!$n) {
+                        echo "[SAME]\t" . $prekey . '' . PHP_EOL;
+                    }
+                    $sc++;
+                } else {
+                    echo "[DIFF]\t" .$prekey . '' . PHP_EOL;
+                    $dc++;
+                    if ($v) {
+                        echo "\tBASE:\t" . json_encode($_v) . PHP_EOL;
+                        echo "\tTARGET:\t" . json_encode($a2[$_k]) . PHP_EOL;
+                    }
+                }
+            }
+            unset($a2[$_k]);
+        } else {
+            echo "[NOT EXIST]\t" . $prekey . '' . PHP_EOL;
+            $nec++;
+            if ($v) {
+                echo "\tBASE:\t" . json_encode($_v) . PHP_EOL;
+            }
+        }
+    }
+    if (!empty($a2)) {
+        foreach ($a2 as $_k => $_v) {
+            echo "[SURPLUS]\t" . $p . "\t" . $_k. PHP_EOL;
+            $spc++;
+            if ($v) {
+                echo "\tTARGET:\t" . json_encode($_v) . PHP_EOL;
+            }
+        }
+    }
+    return [$sc, $dc, $nec, $spc];
+}

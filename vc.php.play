@@ -1,0 +1,103 @@
+#!/usr/bin/env php
+<?php
+$cdir = dirname(__FILE__);
+require_once($cdir . '/libs/reader.inc');
+require_once($cdir . '/libs/debug.inc');
+
+$r = read_from_stdin();
+$cfile = basename(__FILE__);
+
+$arg = getopt('f:c::o::s::m::i::', ['no-output', 'debug']);
+if (!isset($arg['f'])) {
+    echo <<<EOD
+use as echo args|$cfile args
+\t-f function
+\t[-c class]
+\t[-o object]
+\t[-s split symbol]
+\t[-m arguments map] <argument map like (-m a,o,,l,b)>
+\t\t arguments map:
+\t\t\t array[or a] | object[or o] | literal[or  or l] | boolean [or b]
+\t\t\t split by , combond type will json_decode
+\t[-i include files] include files in, split by ,
+\t[--no-output]
+version: 0.9.9\n
+EOD;
+    exit;
+}
+
+$debug = false;
+if (isset($arg['debug'])) {
+    $debug = true;
+    p('Enable debug mode', 'Args: ', $arg);
+}
+
+if (isset($arg['i']) && !empty($arg['i'])) {
+    $ifiles = explode(',', $arg['i']);
+    foreach ($ifiles as $_f) {
+        $_rf = realpath($_f);
+        if ($_rf && file_exists($_rf)) {
+            require_once($_rf);
+            $debug && p('Load file:', $_rf);
+        } else {
+            echo 'no such file: ' . $_f;
+            echo PHP_EOL;
+        }
+    }
+}
+
+$split_symbol = ' ';
+if (isset($arg['s'])) {
+    $split_symbol = $arg['s'];
+}
+
+$amap = [];
+if (isset($arg['m']) && !empty($arg['m'])) {
+    $amap = explode(',', $arg['m']);
+}
+
+$target = null;
+if (isset($arg['c']) && !empty($arg['c'])) {
+    $target = [$arg['c'], $arg['f']];
+} elseif (isset($arg['o']) && !empty($arg['o'])) {
+    $target = [new $arg['o'], $arg['f']];
+} else {
+    $target = $arg['f'];
+}
+
+foreach ($r as $_d) {
+    $_a = explode($split_symbol, trim($_d));
+    if (isset($amap[0])) {
+        foreach ($amap as $__k => $__m) {
+            switch ($__m) {
+            case 'a':
+            case 'array':
+                $_a[$__k] = json_decode($_a[$__k], true);
+                break;
+            case 'o':
+            case 'object':
+                $_a[$__k] = json_decode($_a[$__k]);
+                break;
+            case 'b':
+            case 'bool':
+            case 'boolean':
+                $_a[$__k] = $_a[$__k] ? true : false;
+                break;
+            }
+        }
+    }
+    $debug && p('target: ', $target);
+    if ((is_array($target) && method_exists($target[0], $target[1]))
+        || function_exists($target)
+    ) {
+        $_o = call_user_func_array($target, $_a);
+        if (!isset($arg['no-output'])) {
+            print_r($_o);
+            echo PHP_EOL;
+        }
+    } else {
+        echo 'no such function:' . PHP_EOL;
+        print_r($target);
+        echo PHP_EOL;
+    }
+}

@@ -1,0 +1,38 @@
+#!/usr/bin/env php
+<?php
+$x = getopt('f::');
+$filter = null;
+if (isset($x['f'])) {
+    $filter = explode(',', $x['f']);
+}
+if ($filter !== null) {
+    echo implode("\t", $filter);
+    echo PHP_EOL;
+}
+while($d = fgets(STDIN)) {
+    if ($filter === null) {
+        print_r(json_decode($d, true));
+    } else {
+        $data = json_decode($d, true);
+        $r = [];
+        $f1 = $_f;
+        $d = '';
+        foreach ($filter as $_f) {
+            $f1 = explode(':', $_f);
+            foreach ($f1 as $__f) {
+                if (is_array($data) && isset($data[$__f])) {
+                    $data = $data[$__f];
+                } else {
+                    $data = '';
+                }
+            }
+            if (is_array($data)) {
+                array_push($r, json_encode($data));
+            } else {
+                array_push($r, $data);
+            }
+        }
+        echo implode("\t", $r);
+        echo PHP_EOL;
+    }
+};

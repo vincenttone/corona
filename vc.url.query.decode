@@ -1,0 +1,19 @@
+#!/usr/bin/env php
+<?php
+if (isset($argv[1])) {
+    $query = $argv[1];
+    decode_query($query);
+} else {
+    while($query = fgets(STDIN)) {
+        decode_query($query);
+    }
+}
+function decode_query($query)
+{
+    foreach (explode('&', $query) as $chunk) {
+        $param = explode("=", $chunk);
+        if ($param) {
+            printf("[>] %s:\t%s\n", urldecode($param[0]), urldecode($param[1]));
+        }
+    }
+}

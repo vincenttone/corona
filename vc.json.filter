@@ -1,0 +1,73 @@
+#!/usr/bin/env php
+<?php
+$x = getopt('f::j::v::');
+$filter = null;
+if (isset($x['f'])) {
+    $filter = explode(',', $x['f']);
+}
+$oj = false;
+if (isset($x['j'])) {
+    $oj = true;
+}
+$showVal = false;
+if (isset($x['v'])) {
+    $showVal = true;
+}
+while($d = fgets(STDIN)) {
+    if ($filter === null) {
+        print_r(json_decode($d, true));
+    } else {
+        $data = json_decode($d, true);
+        $r = filt(['|-' => $data], $filter, $oj);
+        if ($showVal) {
+            foreach ($r as $_k => $_r) {
+                echo PHP_EOL;
+                echo "---------\t" . $_k . "\t--------";
+                echo PHP_EOL;
+                echo json_encode($_r);
+                echo PHP_EOL;
+                echo "---------\tEND " . $_k . "\t--------";
+                echo PHP_EOL;
+            }
+        } else {
+            print_r($r);
+        }
+        echo PHP_EOL;
+    }
+}
+
+function filt($a, $filters, $openJson = false)
+{
+    if (!is_array($a)) {
+        if ($openJson) {
+            $a = json_decode($a, true);
+            if (is_array($a)) {
+                goto begin;
+            }
+        }
+        
+        return [];
+    }
+    begin:
+    $f = array_shift($filters);
+    $r = [];
+    foreach ($a as $_k => $_a) {
+        if (!is_array($_a)) {
+            if ($openJson) {
+                $_a = json_decode($_a, true);
+            }
+            if (!is_array($_a)) {
+                continue;
+            }
+        }
+        foreach ($_a as $__k => $__a) {
+            if ($__k == $f || $f == '*') {
+                $r[strval($_k).'::'.$__k] = $__a;
+            }
+        }
+    }
+    if (!empty($filters) && !empty($r)) {
+        return filt($r, $filters, $openJson);
+    }
+    return $r;
+}
