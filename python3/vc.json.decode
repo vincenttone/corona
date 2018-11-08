@@ -13,9 +13,14 @@ def e(d, pre = ' ', sep = ':'):
         print(str(pre) + str(d))
 
 import sys
-for i in sys.stdin:
-    if i.strip() == '':
-        continue
-    i = i.strip('\n').strip()
+if len(sys.argv) > 1:
+    i = sys.argv[1].strip()
     data = json.loads(i)
     e(data)
+else:
+    for i in sys.stdin:
+        if i.strip() == '':
+            continue
+        i = i.strip()
+        data = json.loads(i)
+        e(data)
