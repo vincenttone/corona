@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+import json
+
+def e(d, pre = ' ', sep = ':'):
+    if type(d) is list:
+        for i in d:
+            e(i, pre, sep)
+    elif type(d) is dict:
+        for i in d:
+            e(str(i) + sep, pre, sep)
+            e(d[i], pre[0] + pre, sep)
+    else:
+        print(str(pre) + str(d))
+
+import sys
+for i in sys.stdin:
+    if i.strip() == '':
+        continue
+    i = i.strip('\n').strip()
+    data = json.loads(i)
+    e(data)
